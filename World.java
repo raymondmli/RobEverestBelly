@@ -6,6 +6,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.IntBuffer;
 
+import com.jogamp.newt.event.KeyEvent;
+import com.jogamp.newt.event.KeyListener;
 import com.jogamp.opengl.GL;
 import com.jogamp.opengl.GL3;
 
@@ -24,8 +26,10 @@ import unsw.graphics.geometry.TriangleMesh;
  *
  * @author malcolmr
  */
-public class World extends Application3D {
+public class World extends Application3D implements KeyListener {
     
+    private float aspectRatio;
+    private static final float ROTATION_SCALE = 0.5f;
     private float rotationY = 0;
     private Point3DBuffer vertexBuffer;
     private IntBuffer indicesBuffer;
@@ -33,6 +37,7 @@ public class World extends Application3D {
     private int indicesName;
     private Terrain terrain;
     private TriangleMesh tree;
+    private Camera camera;
     
     public World(Terrain terrain) {
         super("Assignment 2", 800, 600);
@@ -55,12 +60,14 @@ public class World extends Application3D {
     @Override
     public void display(GL3 gl) {
         super.display(gl);
-        Shader.setPenColor(gl, Color.cyan);
+        Shader.setViewMatrix(gl, camera.getMatrix());
+        Shader.setPenColor(gl, Color.BLACK);
         CoordFrame3D frame = CoordFrame3D.identity();
         frame.draw(gl);
-        drawTerrain(gl, frame.translate(0, 0, -15));
-        drawTree(gl, 1.5f, 1.5f, frame);
-        drawTree(gl, 4.5f, 4.5f, frame);
+        float translateZ = -9;
+        drawTerrain(gl, frame.translate(0, 0, translateZ));
+        drawTree(gl, 1.5f, 1.5f, translateZ);
+        drawTree(gl, 4.5f, 4.5f, translateZ);
         // rotationY+=1;
     }
     
@@ -86,10 +93,11 @@ public class World extends Application3D {
      * @param x
      * @param z
      */
-    public void drawTree (GL3 gl, float x, float z, CoordFrame3D terrainFrame) {
+    public void drawTree (GL3 gl, float x, float z, float translation) {
         float altitude = (float) terrain.altitude(x, z);
         //  		Matrix4 transformation = position.getMatrix().multiply(terrainFrame.getMatrix());
-        CoordFrame3D position1 = CoordFrame3D.identity().translate(0, 1f, -15f).translate(new Point3D(x, altitude, z)).scale(0.2f,0.2f,0.2f);
+        CoordFrame3D position1 = CoordFrame3D.identity().translate(0, 1f, translation)
+        .translate(new Point3D(x, altitude, z)).scale(0.2f,0.2f,0.2f);
         position1.draw(gl);
         tree.draw(gl, position1);
     }
@@ -97,11 +105,23 @@ public class World extends Application3D {
     @Override
     public void init(GL3 gl) {
         super.init(gl);
+        camera = new Camera();
+        getWindow().addKeyListener(this);
+        
         //		System.out.println(terrain.altitude(6, 3));
         //		System.out.println(terrain.altitude(6, 4));
         //		System.out.println(terrain.altitude(5, 3));
         //
         //		System.out.println(terrain.altitude(5.8f, 3.1f));
+        //		System.out.println(terrain.altitude(6.0f, 3.1f));
+        //		System.out.println(terrain.altitude(5.0f, 3.0f));
+        //		System.out.println(terrain.altitude(3.1f, 5.8f));
+        //		System.out.println(terrain.altitude(3.0f, 5.0f));
+        //		System.out.println(terrain.altitude(8.9f, 5.7f));
+        //		System.out.println(terrain.altitude(-0.1f, 9f));
+        //		System.out.println(terrain.altitude(1f, -1f));
+        //		System.out.println(terrain.altitude(1f, 10f));
+        
         //TERRAIN LOADING
         vertexBuffer = terrain.generateVertexBuffer();
         indicesBuffer = terrain.generateIndexBuffer();
@@ -133,6 +153,46 @@ public class World extends Application3D {
     @Override
     public void reshape(GL3 gl, int width, int height) {
         super.reshape(gl, width, height);
+        aspectRatio = width/(float)height;
         Shader.setProjMatrix(gl, Matrix4.perspective(60, width/(float)height, 1, 100));
+    }
+    @Override
+    public void keyPressed(KeyEvent e) {
+        short code = e.getKeyCode();
+        
+        if (code == 149) {
+            cameraLeft();
+        } else if (code == 150) {
+            cameraForward();
+        } else if (code == 151) {
+            cameraRight();
+        } else if (code == 152) {
+            cameraBackwards();
+        }
+    }
+    @Override
+    public void keyReleased(KeyEvent e) {
+    }
+    
+    
+    private void cameraBackwards() {
+        System.out.println("back");
+        camera.backwards(terrain);
+        
+    }
+    
+    private void cameraRight() {
+        System.out.println("right");	
+        camera.turnRight();
+    }
+    
+    private void cameraForward() {
+        System.out.println("front");	
+        camera.forwards(terrain);
+    }
+    
+    private void cameraLeft() {
+        System.out.println("left");
+        camera.turnLeft();
     }
 }

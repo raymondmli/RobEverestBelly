@@ -103,27 +103,9 @@ public class MathUtil {
         return lerped;
     }
     
-    //Test this.
-    /** COULD BE SLIGHTLY MORE EFFICIENT BY CHANGING LERP INPUT VALUES TO INTS
-     * Biliner interpolation
-     * @param a
-     * @param b
-     * @param c
-     * @param d
-     * @param lerp
-     * @param xLerp
-     * @return
-     */
-    //	public static Vector3 biLerp (Vector3 a, Vector3 b, Vector3 c, Vector3 d,float yLerp, float xLerp) {
-    //		Vector3 lerpAB = lerp(a.getX(), a.getY(), a.getZ(), b.getX(), b.getY(), b.getZ(), yLerp, 'y');
-    //		Vector3 lerpCD = lerp(c.getX(), c.getY(), c.getZ(), d.getX(), d.getY(), d.getZ(), yLerp, 'y');
-    //		Vector3 biLerped = lerp(lerpAB.getX(), lerpAB.getY(), lerpAB.getZ(), lerpCD.getX(),
-    //							lerpCD.getY(), lerpCD.getZ(), xLerp, 'x');
-    //		return biLerped;
-    //	}
     /**
      * Biliner interpolation but takes ints instead of vector3's.
-     * @precondition only takes ints  
+     * @precondition only takes ints
      * @param a
      * @param b
      * @param c

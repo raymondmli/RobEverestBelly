@@ -108,7 +108,11 @@ public class Terrain {
      * @return altitude (y coordinate)
      */
     public float altitude(float x, float z) {
+        if(x > (width - 1) || z > (depth - 1) || x < 0 || z < 0)
+            return 0;
         float altitudeA = altitudes[(int) x][(int) z];	//altitude of floored coordinate
+        
+        
         if(x == (int) x && z == (int) z)									//doesn't check for infinite case
             return altitudeA;
         //testing if point is above a line formed by x,z and x+1,z+1. If yes, point is above line.
@@ -123,16 +127,12 @@ public class Terrain {
             
         }
         return MathUtil.biLerp((int)x,(int)z,altitudeA
-                               , (int)x + 1,(int)z, altitudes[(int) x + 1][(int) z]
+                               , (int)x ,(int)z + 1, altitudes[(int) x][(int) z + 1]
                                , (int)x,(int)z,altitudeA
                                , (int)x + 1, (int)z + 1, altitudes[(int) x + 1][(int) z + 1]
                                , x, z);
     }
     
-    public static void main(String[] args) {
-        //		Vector3 t = lerp(0,0,2, 2,2,5, 0.3f, 'y');
-        //		System.out.println(t.getX() + " " + t.getY() + " " + t.getZ());
-    }
     /**
      * Add a tree at the specified (x,z) point.
      * The tree's y coordinate is calculated from the altitude of the terrain at that point.

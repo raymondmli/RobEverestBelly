@@ -6,10 +6,13 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.IntBuffer;
 
+import com.jogamp.newt.event.KeyEvent;
+import com.jogamp.newt.event.KeyListener;
 import com.jogamp.opengl.GL;
 import com.jogamp.opengl.GL3;
 
 import unsw.graphics.Application3D;
+import unsw.graphics.CoordFrame2D;
 import unsw.graphics.CoordFrame3D;
 import unsw.graphics.Matrix4;
 import unsw.graphics.Point3DBuffer;
@@ -24,19 +27,25 @@ import unsw.graphics.geometry.TriangleMesh;
  *
  * @author malcolmr
  */
-public class World extends Application3D {
+public class World extends Application3D implements KeyListener {
 
+	private float aspectRatio;
+    private static final float ROTATION_SCALE = 0.5f;
     private float rotationY = 0;
     private Point3DBuffer vertexBuffer;
     private IntBuffer indicesBuffer;
     private int verticesName;
     private int indicesName;
     private Terrain terrain;
-    private TriangleMesh tree; 
+    private TriangleMesh tree;
+    private Camera camera;
     
+	private static TriangleMesh model;
+	
     public World(Terrain terrain) {
     		super("Assignment 2", 800, 600);
         this.terrain = terrain;
+
    
     }
    
@@ -55,11 +64,15 @@ public class World extends Application3D {
 	@Override
 	public void display(GL3 gl) {
 		super.display(gl);
-		Shader.setPenColor(gl, Color.cyan);
-        CoordFrame3D frame = CoordFrame3D.identity();
-        drawTerrain(gl, frame.rotateY(rotationY));
+		Shader.setViewMatrix(gl, camera.getMatrix());
+		Shader.setPenColor(gl, Color.BLACK);
+		
+		CoordFrame3D frame = CoordFrame3D.identity();//camera.getFrame();
+        drawTerrain(gl, frame.translate(0,  0, -9));
+       
+            
         drawTree(gl, 1.5f, 1.5f, frame.rotateY(rotationY));
-        rotationY+=1;
+       // rotationY+=1;
 	}
 
 	@Override
@@ -95,7 +108,11 @@ public class World extends Application3D {
 	@Override
 	public void init(GL3 gl) {
 		super.init(gl);
-		//TERRAIN LOADING 
+		
+        camera = new Camera();
+		getWindow().addKeyListener(this);
+		
+		//TERRAIN LOADING ;
 		vertexBuffer = terrain.generateVertexBuffer();
 		indicesBuffer = terrain.generateIndexBuffer();
 		//generates two buffers in gl object
@@ -126,6 +143,49 @@ public class World extends Application3D {
 	@Override
 	public void reshape(GL3 gl, int width, int height) {
         super.reshape(gl, width, height);
+        aspectRatio = width/(float)height;
         Shader.setProjMatrix(gl, Matrix4.perspective(60, width/(float)height, 1, 100));
 	}
+	
+	@Override
+	public void keyPressed(KeyEvent e) {
+		short code = e.getKeyCode();
+		
+		if (code == 149) {
+			cameraLeft();
+		} else if (code == 150) {
+			cameraForward();			
+		} else if (code == 151) {
+			cameraRight();
+		} else if (code == 152) {
+			cameraBackwards();
+		}
+	}
+	@Override
+	public void keyReleased(KeyEvent e) {
+	}
+
+
+	private void cameraBackwards() {
+		System.out.println("back");
+		camera.backwards(terrain);
+		
+	}
+
+	private void cameraRight() {
+		System.out.println("right");	
+		camera.turnRight();
+	}
+
+	private void cameraForward() {
+		System.out.println("front");	
+		camera.forwards(terrain);
+	}
+
+	private void cameraLeft() {
+		System.out.println("left");
+		camera.turnLeft();
+	}
+
+	
 }

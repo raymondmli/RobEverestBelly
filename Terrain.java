@@ -191,7 +191,7 @@ public class Terrain {
     				indices[index++] = vertexIndex; 
     				indices[index++] = vertexIndex + 1;
     				indices[index++] = vertexIndex + width + 1;
-    				System.out.println("index" + index);
+    				//System.out.println("index" + index);
     			}
     		}
     		indicesBuffer = GLBuffers.newDirectIntBuffer(indices);

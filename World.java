@@ -28,20 +28,26 @@ import unsw.graphics.geometry.TriangleMesh;
  */
 public class World extends Application3D implements KeyListener {
     
+    private static final boolean USE_LIGHTING = true;
     private float aspectRatio;
     private static final float ROTATION_SCALE = 0.5f;
     private float rotationY = 0;
-    private Point3DBuffer vertexBuffer;
-    private IntBuffer indicesBuffer;
     private int verticesName;
     private int indicesName;
     private Terrain terrain;
     private TriangleMesh tree;
+    private TriangleMesh terrainMesh;
     private Camera camera;
     
     public World(Terrain terrain) {
         super("Assignment 2", 800, 600);
         this.terrain = terrain;
+        terrainMesh = new TriangleMesh(terrain.generateVertices(), terrain.generateIndices(), true);
+        try {
+            tree = new TriangleMesh("res/models/tree.ply", true, false);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         
     }
     
@@ -57,35 +63,53 @@ public class World extends Application3D implements KeyListener {
         world.start();
     }
     
+    
+    @Override
+    public void init(GL3 gl) {
+        super.init(gl);
+        tree.init(gl);
+        terrainMesh.init(gl);
+        
+        camera = new Camera();
+        getWindow().addKeyListener(this);
+        
+        Shader shader = null;
+        shader = new Shader(gl, "shaders/vertex_phong.glsl",
+                            "shaders/fragment_phong_dir.glsl");
+        shader.use(gl);
+        
+    }
+    
     @Override
     public void display(GL3 gl) {
         super.display(gl);
         Shader.setViewMatrix(gl, camera.getMatrix());
-        Shader.setPenColor(gl, Color.BLACK);
+        
+        if (USE_LIGHTING) {
+            Shader.setPoint3D(gl, "lightPos", terrain.getSunlight());
+            Shader.setColor(gl, "lightIntensity", Color.WHITE);
+            Shader.setColor(gl, "ambientIntensity", new Color(0.2f, 0.2f, 0.2f));
+            
+            // Set the material properties
+            Shader.setColor(gl, "ambientCoeff", Color.WHITE);
+            Shader.setColor(gl, "diffuseCoeff", new Color(0.5f, 0.5f, 0.5f));
+            Shader.setColor(gl, "specularCoeff", new Color(0.2f, 0.2f, 0.2f));
+            Shader.setFloat(gl, "phongExp", 16f);
+        }
         CoordFrame3D frame = CoordFrame3D.identity();
         frame.draw(gl);
         float translateZ = -9;
-        drawTerrain(gl, frame.translate(0, 0, translateZ));
-        drawTree(gl, 1.5f, 1.5f, translateZ);
-        drawTree(gl, 4.5f, 4.5f, translateZ);
-        // rotationY+=1;
-    }
-    
-    @Override
-    public void destroy(GL3 gl) {
-        super.destroy(gl);
-        gl.glDeleteBuffers(2, new int[] { indicesName, verticesName }, 0);
-    }
-    
-    public void drawTerrain(GL3 gl, CoordFrame3D frame) {
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, verticesName);
-        gl.glVertexAttribPointer(Shader.POSITION, 3, GL.GL_FLOAT, false, 0, 0);
-        gl.glBindBuffer(GL.GL_ELEMENT_ARRAY_BUFFER, indicesName);
+        Shader.setPenColor(gl, Color.CYAN);
+        terrainMesh.draw(gl, frame.translate(0, 0, translateZ));
+        for(Tree t: terrain.trees()) {
+            drawTree(gl, t.getPosition().getX(), t.getPosition().getZ(), translateZ);
+        }
         
-        Shader.setModelMatrix(gl, frame.getMatrix());
-        gl.glDrawElements(GL.GL_TRIANGLES, indicesBuffer.capacity(),
-                          GL.GL_UNSIGNED_INT, 0);
+        // rotationY+=1;
+        // Set the lighting properties
+        
     }
+    
     
     /**
      * draws a tree at the specified x and z coordinates
@@ -99,54 +123,8 @@ public class World extends Application3D implements KeyListener {
         CoordFrame3D position1 = CoordFrame3D.identity().translate(0, 1f, translation)
         .translate(new Point3D(x, altitude, z)).scale(0.2f,0.2f,0.2f);
         position1.draw(gl);
+        Shader.setPenColor(gl, Color.RED);
         tree.draw(gl, position1);
-    }
-    
-    @Override
-    public void init(GL3 gl) {
-        super.init(gl);
-        camera = new Camera();
-        getWindow().addKeyListener(this);
-        
-        //		System.out.println(terrain.altitude(6, 3));
-        //		System.out.println(terrain.altitude(6, 4));
-        //		System.out.println(terrain.altitude(5, 3));
-        //
-        //		System.out.println(terrain.altitude(5.8f, 3.1f));
-        //		System.out.println(terrain.altitude(6.0f, 3.1f));
-        //		System.out.println(terrain.altitude(5.0f, 3.0f));
-        //		System.out.println(terrain.altitude(3.1f, 5.8f));
-        //		System.out.println(terrain.altitude(3.0f, 5.0f));
-        //		System.out.println(terrain.altitude(8.9f, 5.7f));
-        //		System.out.println(terrain.altitude(-0.1f, 9f));
-        //		System.out.println(terrain.altitude(1f, -1f));
-        //		System.out.println(terrain.altitude(1f, 10f));
-        
-        //TERRAIN LOADING
-        vertexBuffer = terrain.generateVertexBuffer();
-        indicesBuffer = terrain.generateIndexBuffer();
-        //generates two buffers in gl object
-        int[] names = new int[2];
-        gl.glGenBuffers(2, names, 0);
-        
-        verticesName = names[0];
-        indicesName = names[1];
-        //binds name to array buffer and binds buffer data to array buffer
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, verticesName);
-        gl.glBufferData(GL.GL_ARRAY_BUFFER, vertexBuffer.capacity() * 3 * Float.BYTES,
-                        vertexBuffer.getBuffer(), GL.GL_STATIC_DRAW);
-        
-        gl.glBindBuffer(GL.GL_ELEMENT_ARRAY_BUFFER, indicesName);
-        gl.glBufferData(GL.GL_ELEMENT_ARRAY_BUFFER, indicesBuffer.capacity()*Float.BYTES,
-                        indicesBuffer, GL.GL_STATIC_DRAW);
-        //TREE LOADING
-        try {
-            tree = new TriangleMesh("res/models/tree.ply");
-            tree.init(gl);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        
     }
     
     
@@ -182,12 +160,12 @@ public class World extends Application3D implements KeyListener {
     }
     
     private void cameraRight() {
-        System.out.println("right");	
+        System.out.println("right");
         camera.turnRight();
     }
     
     private void cameraForward() {
-        System.out.println("front");	
+        System.out.println("front");
         camera.forwards(terrain);
     }
     
@@ -195,4 +173,13 @@ public class World extends Application3D implements KeyListener {
         System.out.println("left");
         camera.turnLeft();
     }
+    
+    @Override
+    public void destroy(GL3 gl) {
+        super.destroy(gl);
+        gl.glDeleteBuffers(2, new int[] { indicesName, verticesName }, 0);
+        tree.destroy(gl);
+        terrainMesh.destroy(gl);
+    }
+    
 }

@@ -5,6 +5,7 @@ import unsw.graphics.world.MathUtil;
 
 import java.nio.IntBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import com.jogamp.opengl.GL;
@@ -34,8 +35,6 @@ public class Terrain {
     private List<Tree> trees;
     private List<Road> roads;
     private Vector3 sunlight;	//is the sunlight vector3 just a point?
-    private Point3DBuffer vertexBuffer;
-    private IntBuffer indicesBuffer;
     
     /**
      * Create a new terrain
@@ -60,8 +59,8 @@ public class Terrain {
         return roads;
     }
     
-    public Vector3 getSunlight() {
-        return sunlight;
+    public Point3D getSunlight() {
+        return new Point3D(0,0,0).translate(sunlight);
     }
     
     /**
@@ -162,29 +161,29 @@ public class Terrain {
         roads.add(road);
     }
     
+    
     /**
-     * loads into the vertex buffer
-     * no idea if this is right.
-     * do we have to scale the terrain and make a bunch of assertions?
+     * version that supports triangle mesh
+     * @return
      */
-    public Point3DBuffer generateVertexBuffer() {
+    public List<Point3D> generateVertices() {
         ArrayList <Point3D> vertices = new ArrayList<Point3D>();
         for (int z = 0; z < depth; z++) {
             for(int x = 0; x < width; x++) {
                 vertices.add(new Point3D((float) x,  (float) getGridAltitude(x,z), (float) z));
             }
         }
-        vertexBuffer = new Point3DBuffer(vertices);
-        return vertexBuffer;
+        return vertices;
     }
     
     /**
+     * Version that supports triangle mesh
      * loads indices of the faces into the index buffer and returns it.
      */
-    public IntBuffer generateIndexBuffer() {
+    public List<Integer> generateIndices() {
         //	System.out.println("width: " + width + "depth: " + depth + "\n");
-        int numPoints = (width - 1) * (depth - 1) * 2 * 3;
-        int[] indices = new int[numPoints];
+        int numIndices = (width - 1) * (depth - 1) * 2 * 3;
+        Integer[] indices = new Integer[numIndices];
         int index = 0;
         for(int z = 0; z < (depth - 1); z++) {
             //needs width - 1 for no overlapping purposes
@@ -192,16 +191,15 @@ public class Terrain {
                 int vertexIndex = z * width + x;
                 //top triangle
                 indices[index++] = vertexIndex;
-                indices[index++] = vertexIndex + width + 1;
                 indices[index++] = vertexIndex + width;
+                indices[index++] = vertexIndex + width + 1;
                 //bottom triangle
                 indices[index++] = vertexIndex; 
+                indices[index++] = vertexIndex + width +1;
                 indices[index++] = vertexIndex + 1;
-                indices[index++] = vertexIndex + width + 1;
             }
         }
-        indicesBuffer = GLBuffers.newDirectIntBuffer(indices);
-        return indicesBuffer;
+        return Arrays.asList(indices);
     }
     
 }

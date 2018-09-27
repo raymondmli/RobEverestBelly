@@ -8,28 +8,31 @@ public class Camera {
     
     private Point3D pos;
     private CoordFrame3D frame;
+    private float rotation = 0;
+    private float altitude = 0;
     
     public Camera() {
-        frame = CoordFrame3D.identity();
+        frame = CoordFrame3D.identity().translate(0, -2, -10);
     }
     
     public void turnRight() {
         frame = frame.rotateY(3);
+        rotation+=3;
         System.out.println(frame.getMatrix());
         
     }
     public void turnLeft() {
         frame = frame.rotateY(-3);
+        rotation-=3;
         System.out.println(frame.getMatrix());
     }
     public void forwards(Terrain t) {
-        frame = frame.translate(0,t.altitude(getX(), getZ()),0.1f);
+        frame = frame.translate((float) (0.1/Math.tan(90-rotation)), 0, 0.1f);
         //frame = frame.translate(0,0f,0.1f);
         System.out.println(frame.getMatrix());
-        
     }
     public void backwards(Terrain t) {
-        frame = frame.translate(0,t.altitude(getX(), getZ()),-0.1f);
+        frame = frame.translate((float) (-0.1/Math.tan(90-rotation)),0,-0.1f);
         //frame = frame.translate(0,0f,-0.1f);
         System.out.println(frame.getMatrix());
         

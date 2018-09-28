@@ -16,6 +16,7 @@ import unsw.graphics.CoordFrame3D;
 import unsw.graphics.Matrix4;
 import unsw.graphics.Point3DBuffer;
 import unsw.graphics.Shader;
+import unsw.graphics.geometry.Line3D;
 import unsw.graphics.geometry.Point3D;
 import unsw.graphics.geometry.TriangleMesh;
 
@@ -38,6 +39,7 @@ public class World extends Application3D implements KeyListener {
     private TriangleMesh tree;
     private TriangleMesh terrainMesh;
     private Camera camera;
+    private Line3D p;
    
     public World(Terrain terrain) {
     		super("Assignment 2", 800, 600);
@@ -74,16 +76,17 @@ public class World extends Application3D implements KeyListener {
 		getWindow().addKeyListener(this);
 
         Shader shader = null;
-        shader = new Shader(gl, "shaders/vertex_phong.glsl",
-                "shaders/fragment_phong_dir.glsl");
-        shader.use(gl);
+//        shader = new Shader(gl, "shaders/vertex_phong.glsl",
+//                "shaders/fragment_phong_dir.glsl");
+//        shader.use(gl);
         
 	}
 	
 	@Override
 	public void display(GL3 gl) {
 		super.display(gl);
-		Shader.setViewMatrix(gl, camera.getMatrix());
+		//Shader.setViewMatrix(gl, camera.getMatrix());
+		camera.setView(gl);
 		
         if (USE_LIGHTING) {
             Shader.setPoint3D(gl, "lightPos", terrain.getSunlight());
@@ -104,7 +107,7 @@ public class World extends Application3D implements KeyListener {
         for(Tree t: terrain.trees()) {
         		drawTree(gl, t.getPosition().getX(), t.getPosition().getZ(), translateZ);
         }
-
+        
        // rotationY+=1;
         // Set the lighting properties
 
@@ -131,7 +134,7 @@ public class World extends Application3D implements KeyListener {
 	@Override
 	public void reshape(GL3 gl, int width, int height) {
         super.reshape(gl, width, height);
-        aspectRatio = width/(float)height;
+        camera.reshape(width, height);
         Shader.setProjMatrix(gl, Matrix4.perspective(60, width/(float)height, 1, 100));
 	}
 	@Override

@@ -22,7 +22,7 @@ in vec3 m;
 void main()
 {
     // Compute the s, v and r vectors
-    vec3 s = normalize(view_matrix*vec4(lightPos,0) - viewPosition).xyz;
+    vec3 s = normalize(view_matrix*vec4(lightPos,0)).xyz;
     vec3 v = normalize(-viewPosition.xyz);
     vec3 r = normalize(reflect(-s,m));
     

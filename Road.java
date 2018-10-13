@@ -36,10 +36,11 @@ public class Road {
     private List<Point2D> points;
     private float width;
     private float altitude;
-    private final float HEIGHT = 0.1f;
-    private final int SEGMENTS = 64;
+    private final int SEGMENTS = 32;
     private Terrain t; 
-    
+    private ArrayList<Point2D> texCoords; //generated same time as vertices are i.e. within make extrusion
+
+
     /**
      * Create a new road with the specified spine 
      *
@@ -49,8 +50,14 @@ public class Road {
     public Road(float width, List<Point2D> spine) {
         this.width = width;
         this.points = spine;
+        texCoords = new ArrayList<Point2D>();
     }
-
+    /**
+     * @precondition Returns null if makeExtrusion() has not yet been called. Else returns texture coordinates.
+     */
+    public ArrayList<Point2D> getTexCoords() {
+    		return texCoords;
+    }
     /**
      * The width of the road.
      * 
@@ -120,13 +127,16 @@ public class Road {
     /**
      * @precondition terrain is set 
      * @return first element of list is triangle mesh for front face. last is for back face. intermediate is mesh for sides
+     * Also generates texCoords 
      */
-    public ArrayList<TriangleMesh> makeExtrusion() {
+    public ArrayList<TriangleMesh> makeExtrusion(int size) {
+        ArrayList<TriangleMesh> meshes = new ArrayList<TriangleMesh>();
+        ArrayList<Point2D> texCoords = new ArrayList<Point2D>();
+        
         Point2D p0 = points.get(0);
         System.out.println("x: " + p0.getX() + " y: " + p0.getY());
         setAltitude(t.altitude(p0.getX(), p0.getY()));
     		//front face is a rectangle with centre point of bottom edge being origin and height 0.1 (it is facing the positive z direction)
-        float fz = p0.getY();
         Point3D left = new Point3D(- width/2,0, 0);
         Point3D right = new Point3D(+ width/2, 0, 0);
         List<Point3D> shape = Arrays.asList(left, right);
@@ -134,17 +144,20 @@ public class Road {
         // The extruded flat surface
         // Remember size refers to number of cubic curves in the spine and segments refers to # of individual segments that approximate curve
         ArrayList<Point3D> shapeVert = new ArrayList<Point3D>(); //contains all the surface vertices
-        for(int i = 0; i < SEGMENTS * (size()+1); i++) {
-        		float param = i * 1.0f/SEGMENTS;
-        		System.out.println("param: " + param + " i: " + i);
+        for(int i = 0; i < SEGMENTS; i++) {
+        		int j = SEGMENTS/(size() + 1);
+        		float param = i * 1.0f/j;
         		//calculating all the vertices 
-	        for (Point3D p : shape)
-	            shapeVert.add(frenet(param).multiply(p.asHomogenous()).asPoint3D());
+	        for (Point3D p : shape) {
+	        		Point3D pFrenet = frenet(param).multiply(p.asHomogenous()).asPoint3D();
+	            shapeVert.add(pFrenet);
+	            texCoords.add(new Point2D(pFrenet.getX(), pFrenet.getZ()));
+	        }
         }
-		int numIndices = (SEGMENTS - 1) * (size() + 1) * 2 * 3; //# triangles * 3 
+		int numIndices = (SEGMENTS - 1) * 2 * 3; //# triangles * 3 
 		Integer[] indices = new Integer[numIndices];
 		int index = 0;
-		for(int z = 0; z < (SEGMENTS - 1) * (size() + 1); z++) {
+		for(int z = 0; z < (SEGMENTS - 1); z++) {
 			int vertexIndex = z * 2;
 //				//top triangle
 			indices[index++] = vertexIndex;
@@ -156,8 +169,8 @@ public class Road {
 			indices[index++] = vertexIndex + 3;	
 		}
 
-        TriangleMesh sidesMesh = new TriangleMesh(shapeVert,Arrays.asList(indices), true);
-        ArrayList<TriangleMesh> meshes = new ArrayList<TriangleMesh>();
+        TriangleMesh sidesMesh = new TriangleMesh(shapeVert,Arrays.asList(indices), true, texCoords);
+     
         meshes.add(sidesMesh);
                 
     		return meshes;
@@ -169,15 +182,16 @@ public class Road {
      */
     public Matrix4 frenet(float t) {
         int i = (int)Math.floor(t);
+        float tInt = t;
         t = t - i;
         
-        i *= 3;
-        
+        //(int) tInt refers to the current cubic of the curve  
+        i = 3*i;// + ((int) tInt) + 3;
         Point2D p0 = points.get(i++);	//p0 refers to the 'origin' of the particular segment/curve
         Point2D p1 = points.get(i++);
         Point2D p2 = points.get(i++);
         Point2D p3 = points.get(i++);
-
+        
         //calculating the k/z axis 
         float dx = db(0, t) * p0.getX() + db(1, t) * p1.getX() + db(2, t) * p2.getX() + db(3, t) * p3.getX();
         float dy = 0;
@@ -196,10 +210,10 @@ public class Road {
                 iaxis.getX(), iaxis.getY(), iaxis.getZ(), 0, // i
                 jFlip.getX(), jFlip.getY(), jFlip.getZ(), 0, // j
                 k.getX(), k.getY(), k.getZ(), 0, // k
-                point(t).getX(), altitude, point(t).getY(), 1  // phi
+                point(tInt).getX(), altitude, point(tInt).getY(), 1  // phi
             };
-        System.out.println(t);
-        System.out.println(new Matrix4(values));
+//        System.out.println("t: " + t + " tInt: " + tInt);
+//        System.out.println(new Matrix4(values));
         return new Matrix4(values);
     }
     

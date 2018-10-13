@@ -7,14 +7,8 @@ import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import com.jogamp.opengl.GL;
-import com.jogamp.opengl.GL3;
-import com.jogamp.opengl.util.GLBuffers;
-
 import unsw.graphics.CoordFrame3D;
 import unsw.graphics.Point3DBuffer;
-import unsw.graphics.Shader;
 import unsw.graphics.Vector3;
 import unsw.graphics.geometry.Point2D;
 import unsw.graphics.geometry.Point3D;
@@ -23,19 +17,20 @@ import unsw.graphics.geometry.TriangleMesh;
 
 
 /**
- * COMMENT: Comment HeightMap
+ * COMMENT: Comment HeightMap 
  *
  * @author malcolmr
  */
 public class Terrain {
-    
+	
     private int width;
     private int depth;
     private float[][] altitudes;
     private List<Tree> trees;
     private List<Road> roads;
-    private Vector3 sunlight;	//is the sunlight vector3 just a point?
-    
+    private Vector3 sunlight;	//is the sunlight vector3 just a point? 
+    private ArrayList<Point2D> texCoords; //generated same time as vertices 
+
     /**
      * Create a new terrain
      *
@@ -49,36 +44,41 @@ public class Terrain {
         trees = new ArrayList<Tree>();
         roads = new ArrayList<Road>();
         this.sunlight = sunlight;
+        texCoords = new ArrayList<Point2D>();
     }
-    
+
     public List<Tree> trees() {
         return trees;
     }
-    
+
     public List<Road> roads() {
         return roads;
     }
     
+    public ArrayList<Point2D> getTexCoords() {
+    		return texCoords;
+    }
+
     public Point3D getSunlight() {
         return new Point3D(0,0,0).translate(sunlight);
     }
-    
+
     /**
-     * Set the sunlight direction.
-     *
+     * Set the sunlight direction. 
+     * 
      * Note: the sun should be treated as a directional light, without a position
-     *
+     * 
      * @param dx
      * @param dy
      * @param dz
      */
     public void setSunlightDir(float dx, float dy, float dz) {
-        sunlight = new Vector3(dx, dy, dz);
+        sunlight = new Vector3(dx, dy, dz);      
     }
-    
+
     /**
      * Get the altitude at a grid point
-     *
+     * 
      * @param x
      * @param z
      * @return
@@ -86,10 +86,10 @@ public class Terrain {
     public double getGridAltitude(int x, int z) {
         return altitudes[x][z];
     }
-    
+
     /**
      * Set the altitude at a grid point
-     *
+     * 
      * @param x
      * @param z
      * @return
@@ -97,45 +97,45 @@ public class Terrain {
     public void setGridAltitude(int x, int z, float h) {
         altitudes[x][z] = h;
     }
-    
+
     /**
-     * Get the altitude at an arbitrary point.
-     * Non-integer points should be interpolated from neighbouring grid points. Remember 'x' and 'z' are the 'x' and 'y' axes
-     *
+     * Get the altitude at an arbitrary point. 
+     * Non-integer points should be interpolated from neighbouring grid points. Remember 'x' and 'z' are the 'x' and 'y' axes  
+     * 
      * @param x
      * @param z
-     * @return altitude (y coordinate)
+     * @return altitude (y coordinate) 
      */
     public float altitude(float x, float z) {
-        if(x > (width - 1) || z > (depth - 1) || x < 0 || z < 0)
-            return 0;
+        if(x > (width - 1) || z > (depth - 1) || x < 0 || z < 0) 
+    			return 0;
         float altitudeA = altitudes[(int) x][(int) z];	//altitude of floored coordinate
+
         
-        
-        if(x == (int) x && z == (int) z)									//doesn't check for infinite case
-            return altitudeA;
-        //testing if point is above a line formed by x,z and x+1,z+1. If yes, point is above line.
-        if(x - ((int) x + 1) - z + ((int) z + 1) >= 0) {
-            
-            return MathUtil.biLerp(
-                                   (int)x + 1,(int)z+1,altitudes[(int) x + 1][(int) z + 1]
-                                   , (int)x,(int)z ,altitudes[(int) x][(int) z ]
-                                   , (int)x + 1,(int)z+1,altitudes[(int) x + 1][(int) z + 1]
-                                   , (int)x + 1,(int)z,altitudes[(int) x + 1][(int) z]
-                                   , x, z);
-            
+        if(x == (int) x && z == (int) z)									//doesn't check for infinite case 
+        		return altitudeA;
+        //testing if point is above a line formed by x,z and x+1,z+1. If yes, point is above line. 
+        if(x - ((int) x + 1) - z + ((int) z + 1) >= 0) {	
+        	
+        		return MathUtil.biLerp(
+        						(int)x + 1,(int)z+1,altitudes[(int) x + 1][(int) z + 1]
+	        					, (int)x,(int)z ,altitudes[(int) x][(int) z ]
+	        					, (int)x + 1,(int)z+1,altitudes[(int) x + 1][(int) z + 1]
+	        					, (int)x + 1,(int)z,altitudes[(int) x + 1][(int) z]
+	        					, x, z);
+        		
         }
         return MathUtil.biLerp((int)x,(int)z,altitudeA
-                               , (int)x ,(int)z + 1, altitudes[(int) x][(int) z + 1]
-                               , (int)x,(int)z,altitudeA
-                               , (int)x + 1, (int)z + 1, altitudes[(int) x + 1][(int) z + 1]
-                               , x, z);
+	        					, (int)x ,(int)z + 1, altitudes[(int) x][(int) z + 1]
+	        					, (int)x,(int)z,altitudeA
+	        					, (int)x + 1, (int)z + 1, altitudes[(int) x + 1][(int) z + 1]
+	        					, x, z);
     }
-    
+
     /**
-     * Add a tree at the specified (x,z) point.
+     * Add a tree at the specified (x,z) point. 
      * The tree's y coordinate is calculated from the altitude of the terrain at that point.
-     *
+     * 
      * @param x
      * @param z
      */
@@ -146,19 +146,19 @@ public class Terrain {
     }
     
     public List<Tree> getTrees() {
-        return trees;
+    		return trees;
     }
-    
-    
+
+
     /**
-     * Add a road.
-     *
+     * Add a road. 
+     * 
      * @param x
      * @param z
      */
     public void addRoad(float width, List<Point2D> spine) {
         Road road = new Road(width, spine);
-        roads.add(road);
+        roads.add(road);        
     }
     
     
@@ -167,39 +167,40 @@ public class Terrain {
      * @return
      */
     public List<Point3D> generateVertices() {
-        ArrayList <Point3D> vertices = new ArrayList<Point3D>();
-        for (int z = 0; z < depth; z++) {
-            for(int x = 0; x < width; x++) {
-                vertices.add(new Point3D((float) x,  (float) getGridAltitude(x,z), (float) z));
-            }
-        }
-        return vertices;
+		ArrayList <Point3D> vertices = new ArrayList<Point3D>();
+		for (int z = 0; z < depth; z++) {
+			for(int x = 0; x < width; x++) {
+				vertices.add(new Point3D((float) x,  (float) getGridAltitude(x,z), (float) z));
+				texCoords.add(new Point2D((float) x, (float) z));
+			}
+		}
+		return vertices;
     }
     
     /**
      * Version that supports triangle mesh
-     * loads indices of the faces into the index buffer and returns it.
+     * loads indices of the faces into the index buffer and returns it. 
      */
     public List<Integer> generateIndices() {
-        //	System.out.println("width: " + width + "depth: " + depth + "\n");
-        int numIndices = (width - 1) * (depth - 1) * 2 * 3;
-        Integer[] indices = new Integer[numIndices];
-        int index = 0;
-        for(int z = 0; z < (depth - 1); z++) {
-            //needs width - 1 for no overlapping purposes
-            for (int x = 0; x < (width - 1); x++) {
-                int vertexIndex = z * width + x;
-                //top triangle
-                indices[index++] = vertexIndex;
-                indices[index++] = vertexIndex + width;
-                indices[index++] = vertexIndex + width + 1;
-                //bottom triangle
-                indices[index++] = vertexIndex; 
-                indices[index++] = vertexIndex + width +1;
-                indices[index++] = vertexIndex + 1;
-            }
-        }
-        return Arrays.asList(indices);
+    	//	System.out.println("width: " + width + "depth: " + depth + "\n");
+    		int numIndices = (width - 1) * (depth - 1) * 2 * 3; 
+    		Integer[] indices = new Integer[numIndices];
+    		int index = 0;
+    		for(int z = 0; z < (depth - 1); z++) {
+    			//needs width - 1 for no overlapping purposes 
+    			for (int x = 0; x < (width - 1); x++) {
+    				int vertexIndex = z * width + x;
+    				//top triangle
+    				indices[index++] = vertexIndex;
+    				indices[index++] = vertexIndex + width;
+    				indices[index++] = vertexIndex + width + 1;
+    				//bottom triangle
+    				indices[index++] = vertexIndex; 
+    				indices[index++] = vertexIndex + width +1;
+    				indices[index++] = vertexIndex + 1;
+    			}
+    		}
+    		return Arrays.asList(indices);
     }
-    
+   
 }

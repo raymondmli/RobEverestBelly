@@ -7,14 +7,8 @@ import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import com.jogamp.opengl.GL;
-import com.jogamp.opengl.GL3;
-import com.jogamp.opengl.util.GLBuffers;
-
 import unsw.graphics.CoordFrame3D;
 import unsw.graphics.Point3DBuffer;
-import unsw.graphics.Shader;
 import unsw.graphics.Vector3;
 import unsw.graphics.geometry.Point2D;
 import unsw.graphics.geometry.Point3D;
@@ -35,6 +29,7 @@ public class Terrain {
     private List<Tree> trees;
     private List<Road> roads;
     private Vector3 sunlight;	//is the sunlight vector3 just a point? 
+    private ArrayList<Point2D> texCoords; //generated same time as vertices 
 
     /**
      * Create a new terrain
@@ -49,6 +44,7 @@ public class Terrain {
         trees = new ArrayList<Tree>();
         roads = new ArrayList<Road>();
         this.sunlight = sunlight;
+        texCoords = new ArrayList<Point2D>();
     }
 
     public List<Tree> trees() {
@@ -57,6 +53,10 @@ public class Terrain {
 
     public List<Road> roads() {
         return roads;
+    }
+    
+    public ArrayList<Point2D> getTexCoords() {
+    		return texCoords;
     }
 
     public Point3D getSunlight() {
@@ -171,6 +171,7 @@ public class Terrain {
 		for (int z = 0; z < depth; z++) {
 			for(int x = 0; x < width; x++) {
 				vertices.add(new Point3D((float) x,  (float) getGridAltitude(x,z), (float) z));
+				texCoords.add(new Point2D((float) x, (float) z));
 			}
 		}
 		return vertices;

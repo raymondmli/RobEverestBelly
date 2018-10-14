@@ -68,31 +68,32 @@ public class BezierInterpolate extends Application2D implements KeyListener {
   
     @Override
     public void display(GL3 gl) {
-    	super.display(gl);
-    	
-    	Shader.setViewMatrix(gl, Matrix3.scale(0.2f, 0.2f));
-        
-    	Shader.setPenColor(gl, Color.RED);
-    	controlPoints[0].draw(gl);
-    	
-    	Shader.setPenColor(gl, Color.GREEN);
-        controlPoints[1].draw(gl);
-        
-        Shader.setPenColor(gl, Color.BLUE);
-        controlPoints[2].draw(gl);
-        
-        Shader.setPenColor(gl, Color.BLACK);
-        controlPoints[3].draw(gl);
-        
-        LineStrip2D curve = new LineStrip2D();
-    	float dt = 1.0f/segments;
-    	
-    	for(int i = 0; i <= segments; i++){        		
-    		float t = i*dt;
-    		curve.add(new Point2D(getX(t), getY(t)));
-    	}
-    	
-    	curve.draw(gl);
+	    	super.display(gl);
+	    	
+	    	Shader.setViewMatrix(gl, Matrix3.scale(0.2f, 0.2f));
+	        
+	    	Shader.setPenColor(gl, Color.RED);
+	    	controlPoints[0].draw(gl);
+	    	
+	    	Shader.setPenColor(gl, Color.GREEN);
+	        controlPoints[1].draw(gl);
+	        
+	        Shader.setPenColor(gl, Color.BLUE);
+	        controlPoints[2].draw(gl);
+	        
+	        Shader.setPenColor(gl, Color.BLACK);
+	        controlPoints[3].draw(gl);
+	        
+	        LineStrip2D curve = new LineStrip2D();
+	    	float dt = 1.0f/segments;
+	    	
+	    	for(int i = 0; i <= segments; i++){        		
+	    		float t = i*dt;
+	    		System.out.println("t: " + t + " x: " + getX(t) + " y: " + getY(t));
+	    		curve.add(new Point2D(getX(t), getY(t)));
+	    	}
+	    	
+	    	curve.draw(gl);
     }
    
 	@Override

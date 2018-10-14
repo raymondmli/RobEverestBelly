@@ -104,8 +104,7 @@ public class Arrow extends Application3D implements MouseListener{
         // The initial shape as its own mesh
         TriangleMesh front = new TriangleMesh(shape, shapeIndices, true);
         
-        Matrix4 m = Matrix4.translation(0, 0, -1).multiply(Matrix4.scale(2, 2, 1)
-        		.multiply(Matrix4.rotationZ(90)));
+        Matrix4 m = Matrix4.translation(0, 0, -1);
         
         // The extruded shape
         List<Point3D> shapeExt= new ArrayList<>();

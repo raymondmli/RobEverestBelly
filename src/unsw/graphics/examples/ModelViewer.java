@@ -32,7 +32,7 @@ public class ModelViewer extends Application3D {
 
     private static final boolean USE_LIGHTING = true;
     
-    private static final boolean USE_TEXTURE = false;
+    private static final boolean USE_TEXTURE = true;
     
     private static final boolean USE_CUBEMAP = false; //Lighting must also be on
 
@@ -46,7 +46,7 @@ public class ModelViewer extends Application3D {
 
     public ModelViewer() throws IOException {
         super("Model viewer", 600, 600);
-        model = new TriangleMesh("res/models/bunny_res4.ply", true, true);
+        model = new TriangleMesh("res/models/bunny_res3.ply", true, true);
         base = new TriangleMesh("res/models/cube_normals.ply", true, true);
     }
 
@@ -123,19 +123,19 @@ public class ModelViewer extends Application3D {
         // Compute the view transform
         CoordFrame3D view = CoordFrame3D.identity().translate(0, 0, -2)
                 // Uncomment the line below to rotate the camera
-                // .rotateY(rotateY)
+                .rotateY(rotateY)
                 .translate(0, 0, 2);
         Shader.setViewMatrix(gl, view.getMatrix());
 
         // Set the lighting properties
         if (USE_LIGHTING) {
-            Shader.setPoint3D(gl, "lightPos", new Point3D(0, 0, 5));
+            Shader.setPoint3D(gl, "lightPos", new Point3D(0, 0, -5));
             Shader.setColor(gl, "lightIntensity", Color.WHITE);
             Shader.setColor(gl, "ambientIntensity", new Color(0.2f, 0.2f, 0.2f));
             
             // Set the material properties
             Shader.setColor(gl, "ambientCoeff", Color.WHITE);
-            Shader.setColor(gl, "diffuseCoeff", new Color(0.5f, 0.5f, 0.5f));
+            Shader.setColor(gl, "diffuseCoeff", new Color(0.8f, 0.8f, 0.8f));
             Shader.setColor(gl, "specularCoeff", new Color(0.8f, 0.8f, 0.8f));
             Shader.setFloat(gl, "phongExp", 16f);
         }
@@ -166,10 +166,10 @@ public class ModelViewer extends Application3D {
                 frame.translate(0, -0.5f, 0).scale(0.5f, 0.5f, 0.5f);
         if (!USE_TEXTURE && !USE_CUBEMAP)
             Shader.setPenColor(gl, Color.BLUE);
-    //    base.draw(gl, baseFrame);
+        base.draw(gl, baseFrame);
         baseFrame.draw(gl);
 
-      //  rotateY += 1;
+        rotateY += 1;
     }
     
     @Override

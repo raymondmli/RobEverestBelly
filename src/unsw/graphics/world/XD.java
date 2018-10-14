@@ -1,8 +1,17 @@
 package unsw.graphics.world;
 
+import java.awt.Color;
 import java.nio.IntBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import com.jogamp.opengl.util.GLBuffers;
+
+import unsw.graphics.CoordFrame3D;
+import unsw.graphics.Shader;
+import unsw.graphics.geometry.Point2D;
+import unsw.graphics.geometry.Point3D;
 
 public class XD {
 //  private Point3DBuffer vertexBuffer;
@@ -115,4 +124,69 @@ public class XD {
 // 		vertexBuffer = new Point3DBuffer(vertices);
 // 		return vertexBuffer;
 // }
+	
+    // Indices to draw the shape
+//  List<Integer> shapeIndices = Arrays.asList(0,1,2, 2,3,0);
+//  TriangleMesh front = new TriangleMesh(shape, shapeIndices, true);
+	
+//  // Indices for the extruded shape
+//  List<Integer> shapeExtIndices = new ArrayList<>(shapeIndices);
+//  Collections.reverse(shapeExtIndices);
+  
+  // The extruded shape as its own mesh
+//  TriangleMesh back = new TriangleMesh(shapeExt, shapeExtIndices, true);
+	
+//	List<Road> roads = new ArrayList<>();
+//roads = terrain.roads();
+//for(Road r: roads) {
+//		for(int i = 0; i < 32; i++) {
+//			float t = i * 1.0f/32;
+//			Point2D p = r.point(t);
+//			Point3D p3D = new Point3D(p.getX(), 1, p.getY());
+//		//	p3D.draw(gl, position);
+//			CoordFrame3D f = new CoordFrame3D(r.frenet(t)).translate(0, 0, translation);
+//			f.draw(gl);
+//			
+//			
+//			
+//			
+//			Point2D p0 = new Point2D(1.5f,3.0f);
+//			int altitude = 1;
+//			int width = 3;
+//    		//front face is a rectangle with centre point of bottom edge being origin and height 0.1 (it is facing the positive z direction)
+//	        Point3D left = new Point3D(- width/2,0, 0);
+//	        Point3D right = new Point3D(+ width/2, 0, 0);
+//	        List<Point3D> shape = Arrays.asList(left, right);
+//	        
+//	        // The extruded flat surface
+//	        // Remember size refers to number of cubic curves in the spine and segments refers to # of individual segments that approximate curve
+//	        ArrayList<Point3D> shapeVert = new ArrayList<Point3D>(); //contains all the surface vertices
+//        		float param = t;
+//        		//calculating all the vertices 
+//	        for (Point3D s : shape) {
+//	        		Point3D s1 = r.frenet(param).multiply(s.asHomogenous()).asPoint3D();
+//	            shapeVert.add(r.frenet(param).multiply(s.asHomogenous()).asPoint3D());
+//	            Shader.setPenColor(gl, Color.PINK);
+//	            s1.draw(gl, position);
+//	        }
+//	        
+//		}
+	
+//}
+	
+	
+//	//end test code 
+//	Road r1 = terrain.roads().get(0);
+//CoordFrame3D f1 = new CoordFrame3D(r1.frenet(1.5f)).translate(0, 0, translation);
+//CoordFrame3D f2 = new CoordFrame3D(r1.frenet(0.5f)).translate(0, 0, translation);
+//Point3D p1 = new Point3D(r1.point(1.5f).getX(), 0, r1.point(1.5f).getY());
+//Point3D p2 = new Point3D(r1.point(0.5f).getX(), 0, r1.point(0.5f).getY());
+//Shader.setPenColor(gl, Color.PINK);
+//
+//p1.draw(gl);
+//p2.draw(gl);
+//f1.draw(gl);
+//f2.draw(gl);
+//Shader.setPenColor(gl, Color.RED);
+////end test code 
 }

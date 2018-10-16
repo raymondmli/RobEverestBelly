@@ -49,9 +49,9 @@ public class Avatar {
 		return frame;
 	}
 	public void turnLeft() {
-		frame = frame.rotateY(6);
-		rotation+=6;
-		System.out.println(frame.getMatrix());
+		frame = frame.rotateY(3);
+		rotation+=3;
+		
 	}	
 	
 	/**
@@ -73,20 +73,20 @@ public class Avatar {
 	}
 	
 	public void turnRight() {
-		frame = frame.rotateY(-6);
-		rotation-=6;
-		System.out.println(frame.getMatrix());
+		frame = frame.rotateY(-3);
+		rotation-=3;
+		
 	}
 	public void backwards(Terrain t) {
 		updateAltitude();
 		frame = frame.translate(0,altitudeChange(),0.1f) ;
-		System.out.println(frame.getMatrix());
+		
 	}
 	
 	public void forwards(Terrain t) {
 		updateAltitude();
 		frame = frame.translate(0,altitudeChange(),-0.1f);
-		System.out.println(frame.getMatrix());
+		
 	}
 	//END MOVEMENT CODE 
 	

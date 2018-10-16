@@ -20,13 +20,18 @@ public class Camera {
 	private Terrain t; 
 	
 	public Camera(Terrain t) {
-		frame = CoordFrame3D.identity().translate(0, 1.5f, 0); 
+		frame = CoordFrame3D.identity().translate(0, 0.25f, 0); 
 		oldX = 0;
 		oldZ = 0;
 		oldAltitude = 0;
 		currAltitude = 0;
 		this.t = t;
 	}
+	
+	public void setFrame(CoordFrame3D frame) {
+		this.frame = frame;
+	}
+	
 	/**
 	 * has to be called after updateAltitude 
 	 * @return
@@ -48,20 +53,20 @@ public class Camera {
 	public void turnLeft() {
 		frame = frame.rotateY(3);
 		rotation+=3;
-		System.out.println(frame.getMatrix());
+		
 
 	}	
 	public void turnRight() {
 		frame = frame.rotateY(-3);
 		rotation-=3;
-		System.out.println(frame.getMatrix());
+//		
 	}
 	public void backwards(Terrain t) {
 		updateAltitude();
 		frame = frame.translate(0,altitudeChange(),0.1f) ;
 		oldX = getX();
 		oldZ = getZ();
-		System.out.println(frame.getMatrix());
+		
 	}
 	
 	public void forwards(Terrain t) {
@@ -69,7 +74,7 @@ public class Camera {
 		frame = frame.translate(0,altitudeChange(),-0.1f);
 		oldX = getX();
 		oldZ = getZ();
-		System.out.println(frame.getMatrix());
+		
 	}
 	public float getX() {
 		return getMatrix().getValues()[12];
@@ -82,10 +87,22 @@ public class Camera {
 	}
 	
 	public Matrix4 setView(GL3 gl) {
-		Matrix4 mat = Matrix4.rotationY(-this.rotation)
+//		System.out.println(frame.getMatrix());
+//		System.out.println(getRotation());
+		Matrix4 mat = Matrix4.rotationY(-getRotation())
 				.multiply(Matrix4.translation(new Point3D(-getX(), -getY(), -getZ())))
 				.multiply(Matrix4.scale(1, 1, 1));
 		return mat;
+	}
+	
+	public float getRotation() {
+		float[] values = getMatrix().getValues();
+		double angle = Math.atan2(values[8],values[10]);
+		return (float) Math.toDegrees(angle);
+	}
+	
+	public Matrix4 setView(GL3 gl, CoordFrame3D frame) {
+		return frame.getMatrix();
 	}
 	
 	public void reshape(int width, int height) {

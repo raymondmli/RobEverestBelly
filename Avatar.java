@@ -94,7 +94,7 @@ public class Avatar {
 	 * @return returns direction vector i.e. k vector of coordinate frame 
 	 */
 	public Point3D getDirection() {
-		return(new Point3D(-getMatrix().getValues()[8], -getMatrix().getValues()[9] ,-getMatrix().getValues()[10]));
+		return(new Point3D(getMatrix().getValues()[8], getMatrix().getValues()[9] ,getMatrix().getValues()[10]));
 	}
 	
 	

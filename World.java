@@ -119,10 +119,10 @@ public class World extends Application3D implements KeyListener {
 	//	camera.getFrame().draw(gl);
 	//	camera.setView(gl);
 		if (fpp) {
-			Shader.setViewMatrix(gl, camera.setView(gl));
+			Shader.setViewMatrix(gl, camera.setView());
 		} else {
 			camera.setFrame(avatar.getFrame().translate(0f, 0.2f, 0.3f));
-			Shader.setViewMatrix(gl, camera.setView(gl));
+			Shader.setViewMatrix(gl, camera.setView());
 			drawAvatar(gl, 1, 0 , 0);
 		}
 		Color night = new Color(0.2f,0.2f,0.2f);
@@ -130,7 +130,7 @@ public class World extends Application3D implements KeyListener {
 		Color currColor = Color.white;
 
 		currColor = lighting.getSunColour(time);
-		float x = (time + 1); 
+		float x = (time + 3); 
 		float y = (time + 1) * (time + 1); 
 		Point3D sunlight = new Point3D(x,y,0); 
         if (USE_LIGHTING) {
@@ -159,7 +159,7 @@ public class World extends Application3D implements KeyListener {
         gl.glDisable(GL.GL_POLYGON_OFFSET_FILL);
        // rotationY+=1;
         
-        drawAvatar(gl, 0, 0, 0);
+      //  drawAvatar(gl, 0, 0, 0);
 
 	}
 	/**
@@ -188,11 +188,11 @@ public class World extends Application3D implements KeyListener {
 	    //"torch" section  
 	    if(time <= 0) {
 	    		//turn the torch on...which means setting torch intensity to not 0. 
-	        Shader.setPoint3D(gl, "torchPos", avatar.getPosition());
+	        Shader.setPoint3D(gl, "torchPos", camera.getLightPosition());
 	        Shader.setColor(gl, "torchIntensity", Color.WHITE);
-	        Shader.setPoint3D(gl, "torchDir", avatar.getDirection());
+	        Shader.setPoint3D(gl, "torchDir", camera.getDirection());
 	        Shader.setFloat(gl, "torchCutoffCos", (float)Math.cos(8*(Math.PI/180)));
-	        Shader.setFloat(gl, "torchAttenuation", 0.1f);
+	        Shader.setFloat(gl, "torchAttenuation", 64f);
 	        Shader.setFloat(gl, "constAttenuation", 0.05f); //EXPECTS VALUE BETWEEN 0.01 AND 0.1
 	        Shader.setFloat(gl, "linearAttenuation", 0.05f);
 	        Shader.setFloat(gl, "quadAttenuation", 0.05f);
@@ -208,28 +208,7 @@ public class World extends Application3D implements KeyListener {
 	    Shader.setPenColor(gl, new Color(255f/256,192f/256,203f/256));
 		avatarMesh.draw(gl, position1);
     }
-    private void drawAvatar (GL3 gl) {
-//		float altitude = (float) terrain.altitude(x, z);
-//  		Matrix4 transformation = position.getMatrix().multiply(terrainFrame.getMatrix());
-		CoordFrame3D position1 = avatar.getFrame();         //.translate(0, 1f, translation)
-								                                  //.translate(new Point3D(x, altitude, z)).scale(0.2f,0.2f,0.2f);
-		position1.draw(gl);
-//		Shader.setViewMatrix(gl, position1.translate(0f, 0.5f, -0.5f).getMatrix());
-	    if (USE_LIGHTING) {          
-	        // Set the material properties
-	        Shader.setColor(gl, "ambientCoeff", Color.WHITE);
-	        Shader.setColor(gl, "diffuseCoeff", new Color(0.8f, 0.8f, 0.8f));
-	        Shader.setColor(gl, "specularCoeff", new Color(0.4f, 0.4f, 0.4f));
-	        Shader.setFloat(gl, "phongExp", 16f);
-	    }
-	    Shader.setInt(gl, "tex", 3);
-	    
-	    gl.glActiveTexture(GL.GL_TEXTURE3);
-	    gl.glBindTexture(GL.GL_TEXTURE_2D, texAvatar.getId());
-	    //255,192,203
-	    Shader.setPenColor(gl, new Color(255f/256,192f/256,203f/256));
-		avatarMesh.draw(gl, position1);
-    }
+
 
     private void drawTerrain(GL3 gl, float translation) {
         if (USE_LIGHTING) {          
@@ -290,8 +269,8 @@ public class World extends Application3D implements KeyListener {
     	    	        }
     	    	        Shader.setInt(gl, "tex", 2);
 
-//    	    	        gl.glActiveTexture(GL.GL_TEXTURE2);
-//    	    	        gl.glBindTexture(GL.GL_TEXTURE_2D, texRoad.getId());
+    	    	        gl.glActiveTexture(GL.GL_TEXTURE2);
+    	    	        gl.glBindTexture(GL.GL_TEXTURE_2D, texRoad.getId());
     	    	        Shader.setPenColor(gl, Color.PINK);
     	    			roadSegment.draw(gl, position);
     	    		}

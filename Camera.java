@@ -5,6 +5,7 @@ import com.jogamp.opengl.GL3;
 import unsw.graphics.CoordFrame3D;
 import unsw.graphics.Matrix4;
 import unsw.graphics.Shader;
+import unsw.graphics.Vector4;
 import unsw.graphics.geometry.Point3D;
 import unsw.graphics.geometry.TriangleMesh;
 
@@ -74,10 +75,9 @@ public class Camera {
 		frame = frame.translate(0,altitudeChange(),-0.1f);
 		oldX = getX();
 		oldZ = getZ();
-		System.out.println(getLightPosition().getX() + " " + getLightPosition().getZ());
-	//	System.out.println(-getMatrix().getValues()[8] + " " + -getMatrix().getValues()[9] +" "+ -getMatrix().getValues()[10]);
-	//	System.out.println(frame.getMatrix());
+		System.out.println("Position: " + getLightPosition().getX() + " " + getLightPosition().getZ());
 	}
+	
 	public float getX() {
 		return getMatrix().getValues()[12];
 	}
@@ -89,10 +89,28 @@ public class Camera {
 	}
 //TORCH CODE BELOW
 	public Point3D getLightPosition() {
-		return(new Point3D(getX(),getY() - 1.5f,getZ()));
+		return(new Point3D(getX(),getY(),getZ()));
 	}
+	/*
+	 * how do i multiply vector by matrix. 
+	 */
 	public Point3D getDirection() {
-		return(new Point3D(-getMatrix().getValues()[8], -getMatrix().getValues()[9],-getMatrix().getValues()[10]));
+		Point3D dir = mulPointMatrix(new Point3D(0,0,-1), frame.getMatrix());
+		return new Point3D(-dir.getX(), -dir.getY() + 1, -dir.getZ());
+		//return(new Point3D(-getMatrix().getValues()[8], -getMatrix().getValues()[9],-getMatrix().getValues()[10]));
+	}
+	/**
+	 * multiplies a point3d by a matrix4. Sound impossible? Not in comp3421. 
+	 * @return
+	 */
+	public Point3D mulPointMatrix(Point3D p, Matrix4 m) {
+		float x = p.getX();
+		float y = p.getY();
+		float z = p.getZ();
+		float a = x * m.getValues()[0] + y * m.getValues()[1] + z * m.getValues()[2];
+		float b = x * m.getValues()[4] + y * m.getValues()[5] + z * m.getValues()[6];
+		float c = x * m.getValues()[8] + y * m.getValues()[9] + z * m.getValues()[10];
+		return new Point3D(a,b,c);
 	}
 	
 //TORCH CODE ABOVE 
@@ -102,7 +120,7 @@ public class Camera {
 		return (float) Math.toDegrees(angle);
 	}
 	
-	public Matrix4 setView(GL3 gl) {
+	public Matrix4 setView() {
 		Matrix4 mat = Matrix4.rotationY(-getRotation())
 						.multiply(Matrix4.translation(new Point3D(-getX(), -getY(), -getZ())))
 						.multiply(Matrix4.scale(1, 1, 1));

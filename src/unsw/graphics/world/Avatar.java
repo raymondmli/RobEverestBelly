@@ -4,6 +4,7 @@ import com.jogamp.opengl.GL3;
 
 import unsw.graphics.CoordFrame3D;
 import unsw.graphics.Matrix4;
+import unsw.graphics.Vector3;
 import unsw.graphics.geometry.Point3D;
 import unsw.graphics.geometry.TriangleMesh;
 
@@ -37,7 +38,9 @@ public class Avatar {
 	public float getZ() {
 		return getMatrix().getValues()[14];
 	}
-	
+	public Point3D getPosition() {
+		return new Point3D(getX(),getY(),getZ());
+	}
 	public void reshape(int width, int height) {
         aspectRatio = (1f * width) / height;            
     }
@@ -51,7 +54,6 @@ public class Avatar {
 	public void turnLeft() {
 		frame = frame.rotateY(3);
 		rotation+=3;
-		
 	}	
 	
 	/**
@@ -75,20 +77,25 @@ public class Avatar {
 	public void turnRight() {
 		frame = frame.rotateY(-3);
 		rotation-=3;
-		
 	}
 	public void backwards(Terrain t) {
 		updateAltitude();
+		System.out.println(getMatrix().getValues()[8] + " " + getMatrix().getValues()[9] +" "+ getMatrix().getValues()[10]);
 		frame = frame.translate(0,altitudeChange(),0.1f) ;
-		
 	}
 	
 	public void forwards(Terrain t) {
 		updateAltitude();
 		frame = frame.translate(0,altitudeChange(),-0.1f);
-		
 	}
 	//END MOVEMENT CODE 
+	/**
+	 * 
+	 * @return returns direction vector i.e. k vector of coordinate frame 
+	 */
+	public Point3D getDirection() {
+		return(new Point3D(getMatrix().getValues()[8], getMatrix().getValues()[9] ,getMatrix().getValues()[10]));
+	}
 	
 	
 //	public Matrix4 setView(GL3 gl) {

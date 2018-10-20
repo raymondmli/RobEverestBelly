@@ -34,6 +34,14 @@ import unsw.graphics.geometry.TriangleMesh;
 public class World extends Application3D implements KeyListener {
 	private boolean fpp = false;
 	
+	private static final int MAX_PARTICLES = 1000;
+	private Particle[] particles = new Particle[MAX_PARTICLES];
+	private static float gravityY = -0.0008f;
+	private static float speedY = 0.1f;
+	
+	private Point3DBuffer positions;
+	private int positionsName;
+	
     private static final boolean USE_LIGHTING = true;
     private static final boolean USE_TEXTURE = true;
     private Texture texTree;	//index 0
@@ -60,7 +68,7 @@ public class World extends Application3D implements KeyListener {
 	private LightingProperties lighting; 
 
     public World(Terrain terrain) {
-    		super("Assignment 2", 800, 600);
+    		super("Assignment 2", 1600, 900);
         this.terrain = terrain;
         lighting = new LightingProperties();
     }
@@ -100,6 +108,23 @@ public class World extends Application3D implements KeyListener {
 		avatarMesh.init(gl);
         terrainMesh.init(gl);
         
+        
+        for (int i = 0; i < MAX_PARTICLES; i++) {
+        	particles[i] = new Particle();
+        }
+        
+        int[] names = new int[2];
+        gl.glGenBuffers(2, names, 0);
+        positionsName = names[0];
+        
+        positions = new Point3DBuffer(MAX_PARTICLES);
+        
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, positionsName);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, MAX_PARTICLES * 3 * Float.BYTES, null, GL.GL_DYNAMIC_DRAW);
+        gl.glVertexAttribPointer(Shader.POSITION, 3, GL.GL_FLOAT, false, 0, 0);
+        
+        gl.glPointSize(25);
+        
         camera = new Camera(terrain);
 		getWindow().addKeyListener(this);
 
@@ -116,8 +141,25 @@ public class World extends Application3D implements KeyListener {
 	@Override
 	public void display(GL3 gl) {
 		super.display(gl);
-	//	camera.getFrame().draw(gl);
-	//	camera.setView(gl);
+		
+		Shader.setPenColor(gl, Color.BLUE);
+
+		for (int i = 0; i < MAX_PARTICLES; i++) {
+			positions.put(i, particles[i].x, particles[i].y, particles[i].z);
+		}
+		
+		gl.glBindBuffer(GL.GL_ARRAY_BUFFER, positionsName);
+		gl.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, MAX_PARTICLES *4 * Float.BYTES, positions.getBuffer());
+		
+		gl.glDrawArrays(GL.GL_POINTS, 0, particles.length);
+		
+		for (int i = 0;i < MAX_PARTICLES;i++) {
+			particles[i].y += particles[i].speedY;
+		}
+		
+		
+		
+		
 		if (fpp) {
 			Shader.setViewMatrix(gl, camera.setView());
 		} else {
@@ -319,7 +361,7 @@ public class World extends Application3D implements KeyListener {
 			cameraBackwards();
 			avatarBackwards();
 		} else if (code == 78) {
-			toggleDayNight();
+			//toggleDayNight();
 		} else if (code == 84) { //t
 			addTime();
 		} else if (code == 70) { //f

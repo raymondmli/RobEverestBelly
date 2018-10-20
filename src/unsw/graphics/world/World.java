@@ -118,6 +118,10 @@ public class World extends Application3D implements KeyListener {
         positionsName = names[0];
         
         positions = new Point3DBuffer(MAX_PARTICLES);
+
+		for (int i = 0; i < MAX_PARTICLES; i++) {
+			positions.put(i, particles[i].x, particles[i].y, particles[i].z);
+		}
         
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, positionsName);
         gl.glBufferData(GL.GL_ARRAY_BUFFER, MAX_PARTICLES * 3 * Float.BYTES, null, GL.GL_DYNAMIC_DRAW);
@@ -144,9 +148,6 @@ public class World extends Application3D implements KeyListener {
 		
 		Shader.setPenColor(gl, Color.BLUE);
 
-		for (int i = 0; i < MAX_PARTICLES; i++) {
-			positions.put(i, particles[i].x, particles[i].y, particles[i].z);
-		}
 		
 		gl.glBindBuffer(GL.GL_ARRAY_BUFFER, positionsName);
 		gl.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, MAX_PARTICLES *4 * Float.BYTES, positions.getBuffer());

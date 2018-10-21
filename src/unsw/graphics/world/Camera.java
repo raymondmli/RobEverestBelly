@@ -89,14 +89,16 @@ public class Camera {
 	}
 //TORCH CODE BELOW
 	public Point3D getLightPosition() {
-		return(new Point3D(getX(),getY(),getZ()));
+		//return(new Point3D(getX(),getY(),getZ()));
+		return new Point3D(0,0,1);
 	}
 	/*
 	 * how do i multiply vector by matrix. 
 	 */
 	public Point3D getDirection() {
 		Point3D dir = mulPointMatrix(new Point3D(0,0,-1), frame.getMatrix());
-		return new Point3D(-dir.getX(), -dir.getY() + 1, -dir.getZ());
+	//	return new Point3D(-dir.getX(), -dir.getY() + 1, -dir.getZ());
+		return new Point3D(0,0,-1);
 		//return(new Point3D(-getMatrix().getValues()[8], -getMatrix().getValues()[9],-getMatrix().getValues()[10]));
 	}
 	/**

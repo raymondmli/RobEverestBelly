@@ -5,7 +5,12 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.IntBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
+import com.jogamp.newt.event.KeyEvent;
+import com.jogamp.newt.event.KeyListener;
 import com.jogamp.opengl.GL;
 import com.jogamp.opengl.GL3;
 
@@ -14,6 +19,9 @@ import unsw.graphics.CoordFrame3D;
 import unsw.graphics.Matrix4;
 import unsw.graphics.Point3DBuffer;
 import unsw.graphics.Shader;
+import unsw.graphics.Texture;
+import unsw.graphics.Vector3;
+import unsw.graphics.geometry.Point2D;
 import unsw.graphics.geometry.Point3D;
 import unsw.graphics.geometry.TriangleMesh;
 
@@ -24,20 +32,38 @@ import unsw.graphics.geometry.TriangleMesh;
  *
  * @author malcolmr
  */
-public class World extends Application3D {
-
-    private float rotationY = 0;
-    private Point3DBuffer vertexBuffer;
-    private IntBuffer indicesBuffer;
-    private int verticesName;
-    private int indicesName;
-    private Terrain terrain;
-    private TriangleMesh tree; 
+public class World extends Application3D implements KeyListener {
+	private boolean fpp = false;
+	
+    private static final boolean USE_LIGHTING = true;
+    private static final boolean USE_TEXTURE = true;
+    private Texture texTree;	//index 0
+    private Texture texTerrain; //index 1
+    private Texture texRoad; //index 2
+    private Texture texAvatar; //index 3
     
+    private Terrain terrain;
+    private TriangleMesh tree;
+    private TriangleMesh terrainMesh;
+    private TriangleMesh avatarMesh; 
+    private ArrayList<ArrayList<TriangleMesh>> roadMeshes; 
+
+    private Camera camera;
+	private float aspectRatio;
+	
+	private Avatar avatar; 
+	
+	private float time; 
+	private int timeDir;
+	private static final int MIDNIGHT = -1;
+	private static final int MIDDAY = 1; 
+	private static final int DUSK = 0;
+	private LightingProperties lighting; 
+
     public World(Terrain terrain) {
     		super("Assignment 2", 800, 600);
         this.terrain = terrain;
-   
+        lighting = new LightingProperties();
     }
    
     /**
@@ -52,80 +78,352 @@ public class World extends Application3D {
         world.start();
     }
 
+
+	@Override
+	public void init(GL3 gl) {
+		super.init(gl);
+        time = 0;
+        timeDir = 1;
+        //TEST
+        List<Point3D>vertices = terrain.generateVertices();
+        List<Integer>indices = terrain.generateIndices();
+        List<Vector3>normals = terrain.generateNormals(vertices, terrain.generateIndicesA());
+        terrainMesh = new TriangleMesh(vertices,indices,true, terrain.getTexCoords());
+		texTree = new Texture(gl, "res/textures/rock.bmp","bmp", false); 
+		texTerrain = new Texture(gl, "res/textures/grass.bmp", "bmp", true);
+		texRoad = new Texture(gl, "res/textures/asphaltTexture.jpg","jpg", true);
+		texAvatar = new Texture(gl, "res/textures/tigerSkin3.jpg", "jpg", false);
+        try {
+            avatarMesh = new TriangleMesh("res/models/apple.ply", true, true);
+            tree = new TriangleMesh("res/models/tree.ply", true, true);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+        
+		tree.init(gl);
+		avatarMesh.init(gl);
+        terrainMesh.init(gl);
+        
+        camera = new Camera(terrain);
+		getWindow().addKeyListener(this);
+
+        Shader shader = null;
+        shader = new Shader(gl, "shaders/vertex_phong_dir.glsl",
+                "shaders/fragment_phong_dir2.glsl");
+        shader.use(gl);
+
+        initRoads(gl);
+        
+        avatar = new Avatar(terrain, avatarMesh, 1);
+	}
+	
 	@Override
 	public void display(GL3 gl) {
 		super.display(gl);
-		Shader.setPenColor(gl, Color.cyan);
-        CoordFrame3D frame = CoordFrame3D.identity();
-        drawTerrain(gl, frame.rotateY(rotationY));
-        drawTree(gl, 1.5f, 1.5f, frame.rotateY(rotationY));
-        rotationY+=1;
-	}
+	//	camera.getFrame().draw(gl);
+	//	camera.setView(gl);
+		if (fpp) {
+			Shader.setViewMatrix(gl, camera.setView());
+	        Shader.setPoint3D(gl, "torchPos", new Point3D (0f, 0f, 0f));
 
-	@Override
-	public void destroy(GL3 gl) {
-		super.destroy(gl);
-        gl.glDeleteBuffers(2, new int[] { indicesName, verticesName }, 0);
-	}
-	
-    public void drawTerrain(GL3 gl, CoordFrame3D frame) {
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, verticesName);
-        gl.glVertexAttribPointer(Shader.POSITION, 3, GL.GL_FLOAT, false, 0, 0);
-        gl.glBindBuffer(GL.GL_ELEMENT_ARRAY_BUFFER, indicesName);
+		} else {
+			camera.setFrame(avatar.getFrame().translate(0f, 0.25f, 0.4f));
+			Shader.setViewMatrix(gl, camera.setView());
+			drawAvatar(gl, 1, 0 , 0);
+		}
+		Color night = new Color(0.2f,0.2f,0.2f);
+		Color day = Color.WHITE;
+		Color currColor = Color.white;
+
+		currColor = lighting.getSunColour(time);
+		float x = (time + 3); 
+		float y = (time + 1) * (time + 1) * time; 
+		Point3D getSun = terrain.getSunlight();
+		Point3D sunlight = new Point3D(x + getSun.getX(),y + getSun.getY(),0 + getSun.getZ()); 
+        if (USE_LIGHTING) {
+            Shader.setPoint3D(gl, "lightPos", sunlight);
+            Shader.setColor(gl, "lightIntensity", currColor);
+            Shader.setColor(gl, "ambientIntensity", new Color(0.2f, 0.2f, 0.2f));
+            
+            // Set the material properties
+            Shader.setColor(gl, "ambientCoeff", Color.WHITE);
+            Shader.setColor(gl, "diffuseCoeff", new Color(0.5f, 0.5f, 0.5f));
+            Shader.setColor(gl, "specularCoeff", new Color(0.2f, 0.2f, 0.2f));
+            Shader.setFloat(gl, "phongExp", 16f);
+        }
+        CoordFrame3D frame = CoordFrame3D.identity();
+     //   frame.draw(gl);
+        float translateZ = 0;
+        drawTerrain(gl, translateZ);
+        terrainMesh.draw(gl, frame.translate(0, 0, translateZ));
+        for(Tree t: terrain.trees()) {
+        		drawTree(gl, t.getPosition().getX(), t.getPosition().getZ(), translateZ);
+        }
+        //draw roads
+		gl.glEnable(GL3.GL_POLYGON_OFFSET_FILL);
+        gl.glPolygonOffset(-1.0f, -1.0f);
+        drawRoads(gl,translateZ);
+        gl.glDisable(GL.GL_POLYGON_OFFSET_FILL);
+       // rotationY+=1;
         
-        Shader.setModelMatrix(gl, frame.getMatrix());
-        gl.glDrawElements(GL.GL_TRIANGLES, indicesBuffer.capacity(), 
-                    GL.GL_UNSIGNED_INT, 0);
+      //  drawAvatar(gl, 0, 0, 0);
+
+        if(time >= 0) {
+	        Shader.setColor(gl, "torchIntensity", new Color(0f, 0f, 0f));
+        }
+	}
+	/**
+	 * draws avatar at specified lx
+	 * @param gl
+	 * @param x
+	 * @param z
+	 * @param translation
+	 */
+    private void drawAvatar (GL3 gl, float x, float z, float translation) {
+//  		Matrix4 transformation = position.getMatrix().multiply(terrainFrame.getMatrix());
+		CoordFrame3D position1 = avatar.getFrame();         //.translate(0, 1f, translation)
+								                                  //.translate(new Point3D(x, altitude, z)).scale(0.2f,0.2f,0.2f);
+	    if (USE_LIGHTING) {          
+	        // Set the material properties
+	        Shader.setColor(gl, "ambientCoeff", Color.WHITE);
+	        Shader.setColor(gl, "diffuseCoeff", new Color(0.8f, 0.8f, 0.8f));
+	        Shader.setColor(gl, "specularCoeff", new Color(0.4f, 0.4f, 0.4f));
+	        Shader.setFloat(gl, "phongExp", 16f);
+
+	    }
+	    //"torch" section  
+	    if(time <= 0) {
+	    		//turn the torch on...which means setting torch intensity to not 0. 
+	        Shader.setPoint3D(gl, "torchPos", new Point3D (0f, 0.15f, 0.4f));
+	        Shader.setColor(gl, "torchIntensity", new Color(1f, 1f,1f));
+	        Shader.setPoint3D(gl, "torchDir", camera.getDirection());
+	        Shader.setFloat(gl, "torchCutoffCos", (float)Math.cos(15f*(Math.PI/180)));
+	        Shader.setFloat(gl, "spotAttenuation", 128f);
+	        Shader.setFloat(gl, "constAttenuation", 0.2f); //EXPECTS VALUE BETWEEN 0.01 AND 0.1
+	        Shader.setFloat(gl, "linearAttenuation", 0.05f);
+	        Shader.setFloat(gl, "quadAttenuation", 0.03f);
+	    }
+	    if(time > 0) 
+	        Shader.setColor(gl, "torchIntensity", Color.BLACK);
+	    //end torch section 
+	    Shader.setInt(gl, "tex", 3);
+	    
+	    gl.glActiveTexture(GL.GL_TEXTURE3);
+	    gl.glBindTexture(GL.GL_TEXTURE_2D, texAvatar.getId());
+	    //255,192,203
+	    Shader.setPenColor(gl, new Color(255f/256,192f/256,203f/256));
+		avatarMesh.draw(gl, position1);
     }
     
+
+    private void drawTerrain(GL3 gl, float translation) {
+        if (USE_LIGHTING) {          
+            // Set the material properties
+            Shader.setColor(gl, "diffuseCoeff", new Color(0.5f, 0.5f, 0.5f));
+            Shader.setColor(gl, "specularCoeff", new Color(0.1f, 0.1f, 0.1f));
+            Shader.setFloat(gl, "phongExp", 16f);
+        }
+        Shader.setInt(gl, "tex", 1);
+
+        gl.glActiveTexture(GL.GL_TEXTURE1);
+        gl.glBindTexture(GL.GL_TEXTURE_2D, texTerrain.getId());
+        
+        Shader.setPenColor(gl, new Color(0.49f, 0.99f, 0f));
+        terrainMesh.draw(gl, CoordFrame3D.identity().translate(0, 0, translation));
+    }
     /**
      * draws a tree at the specified x and z coordinates 
      * @param gl
      * @param x
      * @param z
      */
-    public void drawTree (GL3 gl, float x, float z, CoordFrame3D terrainFrame) {
+    private void drawTree (GL3 gl, float x, float z, float translation) {
     		float altitude = (float) terrain.altitude(x, z);
-    	//	CoordFrame3D position = CoordFrame3D.identity().translate(new Point3D(x, altitude, z)).rotateY(rotationY).scale(0.2f, 0.2f, 0.2f);
   //  		Matrix4 transformation = position.getMatrix().multiply(terrainFrame.getMatrix());
-   // 		CoordFrame3D finalPos = new CoordFrame3D(transformation);
-    	//	tree.draw(gl, position);
+    		CoordFrame3D position1 = CoordFrame3D.identity().translate(0, 1f, translation)
+    								.translate(new Point3D(x, altitude, z)).scale(0.2f,0.2f,0.2f);
+    	//	position1.draw(gl);
+        if (USE_LIGHTING) {          
+            // Set the material properties
+            Shader.setColor(gl, "ambientCoeff", Color.WHITE);
+            Shader.setColor(gl, "diffuseCoeff", new Color(0.8f, 0.8f, 0.8f));
+            Shader.setColor(gl, "specularCoeff", new Color(0.4f, 0.4f, 0.4f));
+            Shader.setFloat(gl, "phongExp", 16f);
+        }
+        Shader.setInt(gl, "tex", 0);
+        
+        gl.glActiveTexture(GL.GL_TEXTURE0);
+        gl.glBindTexture(GL.GL_TEXTURE_2D, texTree.getId());
+        //166,142,94
+        Shader.setPenColor(gl, new Color(255f/256,222f/256,173f/256));
+    		tree.draw(gl, position1);
     }
 
-	@Override
-	public void init(GL3 gl) {
-		super.init(gl);
-		//TERRAIN LOADING 
-		vertexBuffer = terrain.generateVertexBuffer();
-		indicesBuffer = terrain.generateIndexBuffer();
-		//generates two buffers in gl object
-        int[] names = new int[2];
-        gl.glGenBuffers(2, names, 0);
-        
-        verticesName = names[0];
-        indicesName = names[1];
-        //binds name to array buffer and binds buffer data to array buffer
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, verticesName);
-        gl.glBufferData(GL.GL_ARRAY_BUFFER, vertexBuffer.capacity() * 3 * Float.BYTES, 
-        					vertexBuffer.getBuffer(), GL.GL_STATIC_DRAW);
-                
-        gl.glBindBuffer(GL.GL_ELEMENT_ARRAY_BUFFER, indicesName);
-        gl.glBufferData(GL.GL_ELEMENT_ARRAY_BUFFER, indicesBuffer.capacity()*Float.BYTES, 
-        					indicesBuffer, GL.GL_STATIC_DRAW);
-        //TREE LOADING 
-        try {
-            tree = new TriangleMesh("res/models/tree.ply");
-            tree.init(gl);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        
-	}
-	
+    /**
+     * draws roads 
+     */
+    private void drawRoads (GL3 gl, float translation) {
+    		CoordFrame3D position = CoordFrame3D.identity().translate(0, 0, translation);
+    	    for(ArrayList<TriangleMesh> roadMesh: roadMeshes) {
+    	    		for(TriangleMesh roadSegment: roadMesh) {
+    	    	        if (USE_LIGHTING) {          
+    	    	            // Set the material properties
+    	    	            Shader.setColor(gl, "ambientCoeff", Color.WHITE);
+    	    	            Shader.setColor(gl, "diffuseCoeff", new Color(0.8f, 0.8f, 0.8f));
+    	    	            Shader.setColor(gl, "specularCoeff", new Color(0.1f, 0.1f, 0.1f));
+    	    	            Shader.setFloat(gl, "phongExp", 16f);
+    	    	        }
+    	    	        Shader.setInt(gl, "tex", 2);
+
+    	    	        gl.glActiveTexture(GL.GL_TEXTURE2);
+    	    	        gl.glBindTexture(GL.GL_TEXTURE_2D, texRoad.getId());
+    	    	        Shader.setPenColor(gl, Color.PINK);
+    	    			roadSegment.draw(gl, position);
+    	    		}
+    	    }
+    }
+    /**
+     * init function for drawRoads that initialises each mesh within the list of lists
+     */
+    private void initRoads(GL3 gl) {
+    		List<Road> roads = new ArrayList<>();
+	    roads = terrain.roads();
+	  //list of arraylists...each element contains an arraylist corresponding to the three meshes of each road
+	    ArrayList<ArrayList<TriangleMesh>> roadMeshes = new ArrayList<ArrayList<TriangleMesh>>(); 
+	    for(Road r: roads) {
+	    		r.setTerrain(terrain);
+	    		ArrayList<TriangleMesh> currRoadMeshes = r.makeExtrusion(r.size());
+	    		roadMeshes.add(currRoadMeshes);
+	    		for(TriangleMesh currRoadSegment: currRoadMeshes) {
+	    			currRoadSegment.init(gl);
+	    		}
+	    }
+	    this.roadMeshes = roadMeshes;
+    }
+    
 
 	@Override
 	public void reshape(GL3 gl, int width, int height) {
         super.reshape(gl, width, height);
-        Shader.setProjMatrix(gl, Matrix4.perspective(60, width/(float)height, 1, 100));
+        aspectRatio = width/(float)height;
+        Shader.setProjMatrix(gl, Matrix4.perspective(60, width/(float)height, 0.001f, 100));
 	}
+	@Override
+	public void keyPressed(KeyEvent e) {
+		short code = e.getKeyCode();
+		
+		if (code == 149 || code == 65) { //leftarrow or a
+			cameraLeft();
+			avatarLeft();
+		} else if (code == 150 || code == 87) { //uparrow or w
+			cameraForward();
+			avatarForward();
+		} else if (code == 151 || code == 68) { //rightarrow or d
+			cameraRight();
+			avatarRight();
+		} else if (code == 152 || code == 83) { //downarrow or s
+			cameraBackwards();
+			avatarBackwards();
+		} else if (code == 78) {
+			//toggleDayNight();
+		} else if (code == 84) { //t
+			addTime();
+		} else if (code == 70) { //f
+			toggleView();
+		}	
+}
+		
+		
+	
+	@Override
+	public void keyReleased(KeyEvent e) {
+	}
+
+//xd
+	private void cameraBackwards() {
+		//System.out.println("back");
+		camera.backwards(terrain);
+		
+	}
+
+	private void cameraRight() {
+		//System.out.println("right");
+		camera.turnRight();
+	}
+
+	private void cameraForward() {
+		//System.out.println("front");
+		camera.forwards(terrain);
+	}
+
+	private void cameraLeft() {
+		//System.out.println("left");
+		camera.turnLeft();
+	}
+	
+	private void avatarBackwards() {
+		//System.out.println("back");
+		avatar.backwards(terrain);
+		
+	}
+
+	private void avatarRight() {
+		//System.out.println("right");
+		avatar.turnRight();
+	}
+
+	private void avatarForward() {
+		//System.out.println("front");
+		avatar.forwards(terrain);
+	}
+
+	private void avatarLeft() {
+		//System.out.println("left");
+		avatar.turnLeft();
+	}
+
+	@Override
+	public void destroy(GL3 gl) {
+		super.destroy(gl);
+        tree.destroy(gl);
+        terrainMesh.destroy(gl);
+	}
+	
+	private void toggleDayNight() {
+	//	System.out.println(time);
+		if(time <= 0) {
+			time = MIDDAY;
+			return; 
+		}
+		time = MIDNIGHT; 
+	}
+	
+	private void addTime() {
+		lighting.setPrevTime(time);
+		if(time == 1.0) 
+			timeDir = 0;
+		if(time == -1)
+			timeDir = 1;
+		if(timeDir == 1) {
+			time += 0.0625f;
+		}
+		if(timeDir == 0)
+			time -= 0.0625;
+		lighting.setTimeDir(timeDir);
+	//	System.out.println("time: " + lighting.getPeriod(time));
+		lighting.setPeriod(lighting.getPeriod(time));
+		//System.out.println(time);
+		//System.out.println(lighting.getSunColour(time));
+	}
+	
+	public void toggleView() {
+		if(fpp == true) {
+			fpp = false;
+//			camera.setFrame(camera.getFrame().translate(0f,0.4f,0.5f));
+		} else if (fpp == false) {
+			fpp = true;
+//			camera.setFrame(camera.getFrame().translate(0f,-0.4f,-0.5f));
+		}
+	}
+
 }

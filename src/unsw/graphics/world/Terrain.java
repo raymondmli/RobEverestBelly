@@ -115,6 +115,8 @@ public class Terrain {
         if(x == (int) x && z == (int) z)									//doesn't check for infinite case 
         		return altitudeA;
         //testing if point is above a line formed by x,z and x+1,z+1. If yes, point is above line. 
+        //x - ((int) x + 1) - z + ((int) z + 1) >= 0
+        //(x - (int) x) + (z - (int) z + 1) >= 0
         if(x - ((int) x + 1) - z + ((int) z + 1) >= 0) {	
         	
         		return MathUtil.biLerp(
@@ -201,6 +203,59 @@ public class Terrain {
     			}
     		}
     		return Arrays.asList(indices);
+    }
+    
+    public Integer[] generateIndicesA() {
+    	//	System.out.println("width: " + width + "depth: " + depth + "\n");
+    		int numIndices = (width - 1) * (depth - 1) * 2 * 3; 
+    		Integer[] indices = new Integer[numIndices];
+    		int index = 0;
+    		for(int z = 0; z < (depth - 1); z++) {
+    			//needs width - 1 for no overlapping purposes 
+    			for (int x = 0; x < (width - 1); x++) {
+    				int vertexIndex = z * width + x;
+    				//top triangle
+    				indices[index++] = vertexIndex;
+    				indices[index++] = vertexIndex + width;
+    				indices[index++] = vertexIndex + width + 1;
+    				//bottom triangle
+    				indices[index++] = vertexIndex; 
+    				indices[index++] = vertexIndex + width +1;
+    				indices[index++] = vertexIndex + 1;
+    			}
+    		}
+    		return indices;
+    }
+    
+    public List<Vector3> generateNormals(List<Point3D>vertices, Integer[]indices) {
+ 		List<Vector3> normals = new ArrayList<Vector3>();
+ 		int numTriangles = (width ) * (depth ) * 2;
+ 		for(int i = 0; i < numTriangles; i++) {
+ 			normals.add(i, new Vector3(0,1,0)); //fills in the list. 
+ 		}
+ 		for(int i = 0; i < numTriangles; i++) {
+// 			int a = indices[i];
+// 			int b = indices[i + 1];
+// 			int c = indices[i+2];
+ 			Point3D v0 = vertices.get(indices[i]);
+ 			Point3D v1 = vertices.get(indices[i + 1]);
+ 			Point3D v2 = vertices.get(indices[i + 2]);
+ 			
+ 			Vector3 normal = normal(v0,v1,v2);
+ 			normals.set(indices[i], normal);
+ 			normals.set(indices[i + 1], normal);
+ 			normals.set(indices[i + 2], normal);
+ 		}
+ 		for(Vector3 v: normals) {
+ 			v.normalize();
+ 		}
+ 		return normals; 
+    }
+    
+    private Vector3 normal (Point3D p1, Point3D p2, Point3D p3) {
+ 		Vector3 a = p2.minus(p1);
+ 		Vector3 b = p3.minus(p1);
+ 		return a.cross(b).normalize();
     }
    
 }

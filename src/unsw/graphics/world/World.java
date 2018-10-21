@@ -137,8 +137,9 @@ public class World extends Application3D implements KeyListener {
 
 		currColor = lighting.getSunColour(time);
 		float x = (time + 3); 
-		float y = (time + 1) * (time + 1); 
-		Point3D sunlight = new Point3D(x,y,0); 
+		float y = (time + 1) * (time + 1) * time; 
+		Point3D getSun = terrain.getSunlight();
+		Point3D sunlight = new Point3D(x + getSun.getX(),y + getSun.getY(),0 + getSun.getZ()); 
         if (USE_LIGHTING) {
             Shader.setPoint3D(gl, "lightPos", sunlight);
             Shader.setColor(gl, "lightIntensity", currColor);
@@ -151,7 +152,7 @@ public class World extends Application3D implements KeyListener {
             Shader.setFloat(gl, "phongExp", 16f);
         }
         CoordFrame3D frame = CoordFrame3D.identity();
-        frame.draw(gl);
+     //   frame.draw(gl);
         float translateZ = 0;
         drawTerrain(gl, translateZ);
         terrainMesh.draw(gl, frame.translate(0, 0, translateZ));
@@ -167,6 +168,9 @@ public class World extends Application3D implements KeyListener {
         
       //  drawAvatar(gl, 0, 0, 0);
 
+        if(time >= 0) {
+	        Shader.setColor(gl, "torchIntensity", new Color(0f, 0f, 0f));
+        }
 	}
 	/**
 	 * draws avatar at specified lx
@@ -176,20 +180,16 @@ public class World extends Application3D implements KeyListener {
 	 * @param translation
 	 */
     private void drawAvatar (GL3 gl, float x, float z, float translation) {
-		float altitude = (float) terrain.altitude(x, z);
 //  		Matrix4 transformation = position.getMatrix().multiply(terrainFrame.getMatrix());
 		CoordFrame3D position1 = avatar.getFrame();         //.translate(0, 1f, translation)
 								                                  //.translate(new Point3D(x, altitude, z)).scale(0.2f,0.2f,0.2f);
-		position1.draw(gl);
 	    if (USE_LIGHTING) {          
 	        // Set the material properties
 	        Shader.setColor(gl, "ambientCoeff", Color.WHITE);
 	        Shader.setColor(gl, "diffuseCoeff", new Color(0.8f, 0.8f, 0.8f));
 	        Shader.setColor(gl, "specularCoeff", new Color(0.4f, 0.4f, 0.4f));
 	        Shader.setFloat(gl, "phongExp", 16f);
-//	        uniform float constAttenuation;
-//	        uniform float linearAttenuation;
-//	        uniform float quadAttenuation;
+
 	    }
 	    //"torch" section  
 	    if(time <= 0) {
@@ -215,18 +215,6 @@ public class World extends Application3D implements KeyListener {
 		avatarMesh.draw(gl, position1);
     }
     
-    private void torchP(GL3 gl, Point3D torchPos) {
-		//turn the torch on...which means setting torch intensity to not 0. 
-    	//	Point3D torchPos = new Point3D(0f, 0.25f, 0.4f);
-        Shader.setPoint3D(gl, "torchPos", torchPos);
-        Shader.setColor(gl, "torchIntensity", Color.WHITE);
-        Shader.setPoint3D(gl, "torchDir", camera.getDirection());
-        Shader.setFloat(gl, "torchCutoffCos", (float)Math.cos(15f*(Math.PI/180)));
-        Shader.setFloat(gl, "spotAttenuation", 64f);
-        Shader.setFloat(gl, "constAttenuation", 0.2f); //EXPECTS VALUE BETWEEN 0.01 AND 0.1
-        Shader.setFloat(gl, "linearAttenuation", 0.05f);
-        Shader.setFloat(gl, "quadAttenuation", 0.03f);
-    }
 
     private void drawTerrain(GL3 gl, float translation) {
         if (USE_LIGHTING) {          
@@ -254,7 +242,7 @@ public class World extends Application3D implements KeyListener {
   //  		Matrix4 transformation = position.getMatrix().multiply(terrainFrame.getMatrix());
     		CoordFrame3D position1 = CoordFrame3D.identity().translate(0, 1f, translation)
     								.translate(new Point3D(x, altitude, z)).scale(0.2f,0.2f,0.2f);
-    		position1.draw(gl);
+    	//	position1.draw(gl);
         if (USE_LIGHTING) {          
             // Set the material properties
             Shader.setColor(gl, "ambientCoeff", Color.WHITE);
@@ -337,7 +325,7 @@ public class World extends Application3D implements KeyListener {
 			cameraBackwards();
 			avatarBackwards();
 		} else if (code == 78) {
-			toggleDayNight();
+			//toggleDayNight();
 		} else if (code == 84) { //t
 			addTime();
 		} else if (code == 70) { //f
@@ -353,44 +341,44 @@ public class World extends Application3D implements KeyListener {
 
 //xd
 	private void cameraBackwards() {
-		System.out.println("back");
+		//System.out.println("back");
 		camera.backwards(terrain);
 		
 	}
 
 	private void cameraRight() {
-		System.out.println("right");	
+		//System.out.println("right");
 		camera.turnRight();
 	}
 
 	private void cameraForward() {
-		System.out.println("front");	
+		//System.out.println("front");
 		camera.forwards(terrain);
 	}
 
 	private void cameraLeft() {
-		System.out.println("left");
+		//System.out.println("left");
 		camera.turnLeft();
 	}
 	
 	private void avatarBackwards() {
-		System.out.println("back");
+		//System.out.println("back");
 		avatar.backwards(terrain);
 		
 	}
 
 	private void avatarRight() {
-		System.out.println("right");	
+		//System.out.println("right");
 		avatar.turnRight();
 	}
 
 	private void avatarForward() {
-		System.out.println("front");	
+		//System.out.println("front");
 		avatar.forwards(terrain);
 	}
 
 	private void avatarLeft() {
-		System.out.println("left");
+		//System.out.println("left");
 		avatar.turnLeft();
 	}
 
@@ -424,8 +412,8 @@ public class World extends Application3D implements KeyListener {
 		lighting.setTimeDir(timeDir);
 	//	System.out.println("time: " + lighting.getPeriod(time));
 		lighting.setPeriod(lighting.getPeriod(time));
-		System.out.println(time);
-		System.out.println(lighting.getSunColour(time));
+		//System.out.println(time);
+		//System.out.println(lighting.getSunColour(time));
 	}
 	
 	public void toggleView() {

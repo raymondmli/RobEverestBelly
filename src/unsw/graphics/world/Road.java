@@ -134,7 +134,7 @@ public class Road {
         ArrayList<Point2D> texCoords = new ArrayList<Point2D>();
         
         Point2D p0 = points.get(0);
-        System.out.println("x: " + p0.getX() + " y: " + p0.getY());
+     //   System.out.println("x: " + p0.getX() + " y: " + p0.getY());
         setAltitude(t.altitude(p0.getX(), p0.getY()));
     		//front face is a rectangle with centre point of bottom edge being origin and height 0.1 (it is facing the positive z direction)
         Point3D left = new Point3D(- width/2,0, 0);
@@ -157,6 +157,11 @@ public class Road {
 		int numIndices = (SEGMENTS - 1) * 2 * 3; //# triangles * 3 
 		Integer[] indices = new Integer[numIndices];
 		int index = 0;
+		Vector3 n = new Vector3(0,1,0);
+		List<Vector3>nList = new ArrayList<Vector3>();
+		for(int y = 0; y < (SEGMENTS)*2*3; y++) {
+			nList.add(n);
+		}
 		for(int z = 0; z < (SEGMENTS - 1); z++) {
 			int vertexIndex = z * 2;
 //				//top triangle
@@ -169,8 +174,9 @@ public class Road {
 			indices[index++] = vertexIndex + 3;	
 		}
 
-        TriangleMesh sidesMesh = new TriangleMesh(shapeVert,Arrays.asList(indices), true, texCoords);
-     
+      //  TriangleMesh sidesMesh = new TriangleMesh(shapeVert,Arrays.asList(indices), true, texCoords);
+        TriangleMesh sidesMesh = new TriangleMesh(shapeVert, nList,Arrays.asList(indices), texCoords);
+
         meshes.add(sidesMesh);
                 
     		return meshes;
